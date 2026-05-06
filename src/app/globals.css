@@ -1,0 +1,108 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg: #0a0a0a;
+  --color-bg-secondary: #171717;
+  --color-text: #f5f5f5;
+  --color-text-muted: #a3a3a3;
+  --color-accent: #ff6b1a;
+  --color-accent-bright: #ff8c42;
+  --color-circuit: #06b6d4;
+  --color-border: #262626;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'cv11', 'ss01';
+}
+
+/* Pattern de fundal subtil — efect grid tehnic */
+.tech-grid {
+  background-image:
+    linear-gradient(rgba(255, 107, 26, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 107, 26, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* Selecție text personalizată */
+::selection {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+/* Scrollbar tech */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}
+
+/* Componente reutilizabile */
+@layer components {
+  .btn-primary {
+    @apply px-6 py-3 bg-spark-500 text-carbon-900 font-mono font-bold uppercase tracking-wider 
+           hover:bg-spark-400 transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-spark-400 focus:ring-offset-2 focus:ring-offset-carbon-900;
+  }
+  
+  .btn-secondary {
+    @apply px-6 py-3 bg-transparent border-2 border-carbon-700 text-carbon-100 
+           font-mono font-bold uppercase tracking-wider
+           hover:border-spark-500 hover:text-spark-400 transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-spark-400;
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-3 bg-carbon-800 border-2 border-carbon-700 text-carbon-100
+           font-mono placeholder:text-carbon-500
+           focus:outline-none focus:border-spark-500 transition-colors;
+  }
+  
+  .card {
+    @apply bg-carbon-800 border border-carbon-700 p-6 transition-all duration-200
+           hover:border-spark-600;
+  }
+  
+  .badge {
+    @apply inline-block px-3 py-1 text-xs font-mono font-bold uppercase tracking-wider;
+  }
+  
+  .badge-robotics { @apply bg-spark-600 text-carbon-50; }
+  .badge-3d { @apply bg-circuit-500 text-carbon-900; }
+  .badge-web { @apply bg-carbon-200 text-carbon-900; }
+  .badge-tutorial { @apply bg-yellow-500 text-carbon-900; }
+}
+
+/* Animații intrare pagină */
+.fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}

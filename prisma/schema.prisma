@@ -1,0 +1,208 @@
+// Prisma Schema - Blog de Robotică
+// Securitate: relații cu cascade, indecși pentru performanță, loguri pentru audit
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============= UTILIZATORI =============
+enum Role {
+  USER
+  AUTHOR
+  ADMIN
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  passwordHash  String    // bcrypt hash, NICIODATĂ parola în clar
+  role          Role      @default(USER)
+  emailVerified DateTime?
+  
+  // 2FA (TOTP - Time-based One-Time Password)
+  twoFactorSecret  String?
+  twoFactorEnabled Boolean @default(false)
+  
+  // Securitate suplimentară
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+  lastLoginIp         String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relații
+  posts                Post[]
+  comments             Comment[]
+  savedPosts           SavedPost[]
+  sessions             Session[]
+  authLogs             AuthLog[]
+  passwordResetTokens  PasswordResetToken[]
+
+  @@index([email])
+}
+
+// ============= TOKEN-URI RESET PAROLĂ =============
+// Stocăm DOAR hash-ul tokenului (SHA-256). Token-ul în clar e trimis o singură
+// dată user-ului (în email). Dacă BD ar fi furată, atacatorul nu poate fabrica
+// link-uri valide — n-ar avea token-ul brut, doar hash-ul.
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique  // SHA-256 hex (64 caractere)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime // 1h de la creare
+  usedAt    DateTime? // null = neutilizat; setat la prima utilizare (single-use)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ============= SESIUNI (NextAuth) =============
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+}
+
+// ============= ARTICOLE =============
+enum Category {
+  ROBOTICS       // Robotică
+  THREE_D_PRINT  // Imprimare 3D
+  WEB_DEV        // Dezvoltare web
+  TUTORIAL       // Tutorial
+  PROJECT        // Proiect personal
+}
+
+model Post {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  
+  // Conținut bilingv (RO + EN)
+  titleRo     String
+  titleEn     String
+  contentRo   String   @db.Text
+  contentEn   String   @db.Text
+  excerptRo   String   @db.Text
+  excerptEn   String   @db.Text
+  
+  category    Category
+  coverImage  String?
+  published   Boolean  @default(false)
+  
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  comments    Comment[]
+  savedBy     SavedPost[]
+  files       PostFile[]
+  
+  views       Int      @default(0)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  publishedAt DateTime?
+  
+  @@index([authorId])
+  @@index([category])
+  @@index([published, publishedAt])
+}
+
+// ============= FIȘIERE ATAȘATE PROIECTELOR =============
+// (ex: STL pentru 3D, scheme robotică, cod sursă)
+model PostFile {
+  id        String   @id @default(cuid())
+  postId    String
+  filename  String   // Numele original al fișierului
+  storedAs  String   // Numele random pe disc (anti path-traversal)
+  mimeType  String
+  size      Int      // bytes
+  
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  
+  @@index([postId])
+}
+
+// ============= COMENTARII =============
+model Comment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text  // Sanitizat anti-XSS înainte de salvare
+  
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  // Comentarii imbricate (răspunsuri)
+  parentId  String?
+  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("CommentReplies")
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([postId])
+  @@index([authorId])
+}
+
+// ============= SALVĂRI (favorites) =============
+// "Doritorii să le poată salva pentru realizare"
+model SavedPost {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, postId])  // Un user nu poate salva același post de 2 ori
+  @@index([userId])
+}
+
+// ============= AUDIT LOG (securitate) =============
+// Loghează evenimente sensibile pentru analiză și demonstrare în lucrare
+enum AuthEvent {
+  LOGIN_SUCCESS
+  LOGIN_FAILED
+  LOGIN_LOCKED       // Cont blocat după N încercări eșuate
+  LOGOUT
+  PASSWORD_CHANGED
+  PASSWORD_RESET_REQUESTED
+  PASSWORD_RESET_SUCCESS
+  TWO_FA_ENABLED
+  TWO_FA_DISABLED
+  REGISTRATION
+}
+
+model AuthLog {
+  id        String    @id @default(cuid())
+  userId    String?   // poate fi null dacă login-ul a eșuat la utilizator inexistent
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  email     String?   // pentru tentative cu utilizator inexistent
+  event     AuthEvent
+  ipAddress String?
+  userAgent String?
+  
+  createdAt DateTime  @default(now())
+  
+  @@index([userId])
+  @@index([event])
+  @@index([createdAt])
+}
