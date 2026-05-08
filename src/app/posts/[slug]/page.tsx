@@ -31,6 +31,16 @@ async function getPost(slug: string) {
     include: {
       author: { select: { name: true } },
       _count: { select: { comments: true, savedBy: true } },
+      files: {
+        orderBy: { createdAt: 'asc' },
+        select: {
+          id: true,
+          filename: true,
+          storedAs: true,
+          mimeType: true,
+          size: true,
+        },
+      },
     },
   });
 }
@@ -184,6 +194,50 @@ export default async function PostDetailPage({
             {post.contentRo}
           </div>
         </div>
+
+        {/* Atașamente — afișate doar dacă există */}
+        {post.files.length > 0 && (
+          <section className="mt-12 pt-8 border-t border-carbon-800">
+            <div className="text-circuit-500 font-mono text-sm mb-4">
+              // ATAȘAMENTE ({post.files.length})
+            </div>
+            <ul className="space-y-2">
+              {post.files.map((f) => {
+                const sizeStr =
+                  f.size < 1024
+                    ? `${f.size} B`
+                    : f.size < 1024 * 1024
+                      ? `${(f.size / 1024).toFixed(1)} KB`
+                      : `${(f.size / (1024 * 1024)).toFixed(1)} MB`;
+                const icon = f.mimeType.startsWith('image/')
+                  ? '🖼'
+                  : f.mimeType === 'application/pdf'
+                    ? '📄'
+                    : f.mimeType === 'application/zip'
+                      ? '📦'
+                      : f.mimeType === 'model/stl' || f.mimeType === 'application/octet-stream'
+                        ? '🔩'
+                        : '📎';
+                return (
+                  <li key={f.id} className="card flex items-center gap-3 hover:border-spark-600">
+                    <span className="text-2xl">{icon}</span>
+                    <a
+                      href={`/uploads/${f.storedAs}`}
+                      target="_blank"
+                      rel="noopener"
+                      className="flex-1 font-mono text-sm text-spark-400 hover:text-spark-300 truncate"
+                      title={f.filename}
+                      download={f.filename}
+                    >
+                      {f.filename}
+                    </a>
+                    <span className="text-xs font-mono text-carbon-500">{sizeStr}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
 
         {/* Sistem comentarii — sanitizare anti-XSS în /api/comments */}
         <CommentSection postId={post.id} />

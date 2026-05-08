@@ -124,32 +124,69 @@ export const commentSchema = z.object({
 });
 
 // ========= UPLOAD FIȘIERE =========
+//
+// Strategie cu STRATURI de apărare:
+//   1. Whitelist MIME — doar tipuri sigure
+//   2. Whitelist extensie — în storage.ts
+//   3. Cross-check MIME ⇔ extensie — refuzăm .pdf cu MIME image/jpeg etc.
+//   4. Limit size — anti-DoS
+//   5. Limit lungime nume — anti-DoS pe filesystem
+//   6. Anti path-traversal pe nume original — defense in depth (deși numele
+//      pe disk e oricum random, validăm și input-ul user)
+//   7. SVG EXCLUS — poate conține <script> inline (XSS clasic)
 
+import { isMimeExtensionMatch, sanitizeExtension } from './storage';
+
+// MIME-uri permise. NU includem image/svg+xml — risc XSS.
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',
   'image/png',
   'image/webp',
-  'image/svg+xml',
   'application/pdf',
   'application/zip',
   'model/stl',
-  'application/octet-stream', // pentru .stl uneori
-];
+  'application/octet-stream', // pentru .stl când browser-ul nu recunoaște MIME
+] as const;
+
+const MAX_FILENAME_LENGTH = 255; // limita FAT/ext4
 
 export function validateUpload(file: File, maxSizeMB = 10) {
   const errors: string[] = [];
 
-  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-    errors.push(`Tip fișier neacceptat: ${file.type}`);
+  // 1. Whitelist MIME
+  if (!ALLOWED_MIME_TYPES.includes(file.type as typeof ALLOWED_MIME_TYPES[number])) {
+    errors.push(`Tip fișier neacceptat: ${file.type || '(necunoscut)'}`);
   }
 
+  // 2. Limit size
   if (file.size > maxSizeMB * 1024 * 1024) {
-    errors.push(`Fișier prea mare (max ${maxSizeMB}MB)`);
+    errors.push(`Fișier prea mare (max ${maxSizeMB} MB).`);
+  }
+  if (file.size === 0) {
+    errors.push('Fișierul e gol.');
   }
 
-  // Apărare împotriva path-traversal (../../../etc/passwd)
-  if (/[\\\/\.]{2,}/.test(file.name) || file.name.startsWith('.')) {
-    errors.push('Nume fișier suspect');
+  // 3. Limit lungime nume
+  if (file.name.length > MAX_FILENAME_LENGTH) {
+    errors.push('Numele fișierului e prea lung.');
+  }
+  if (file.name.length === 0) {
+    errors.push('Nume fișier lipsă.');
+  }
+
+  // 4. Anti path-traversal pe numele original (defense in depth — numele pe
+  //    disk e oricum random, dar nu salvăm input ostil nici în BD).
+  if (/[\\\/]/.test(file.name) || file.name.includes('..') || file.name.startsWith('.')) {
+    errors.push('Nume fișier suspect (caractere de path).');
+  }
+
+  // 5. Cross-check extensie ⇔ MIME
+  const ext = sanitizeExtension(file.name);
+  if (!ext) {
+    errors.push('Extensie lipsă sau invalidă.');
+  } else if (!errors.length && !isMimeExtensionMatch(file.type, ext)) {
+    // Doar dacă MIME-ul a trecut whitelist-ul, mai verificăm și extensia.
+    errors.push(`Extensia ${ext} nu se potrivește cu tipul ${file.type}.`);
   }
 
   return { valid: errors.length === 0, errors };

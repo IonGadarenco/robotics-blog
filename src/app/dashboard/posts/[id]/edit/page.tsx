@@ -11,6 +11,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import HeaderActions from '@/components/HeaderActions';
 import EditForm from './EditForm';
+import FileUpload from './FileUpload';
 
 export default async function EditPostPage({
   params,
@@ -30,7 +31,21 @@ export default async function EditPostPage({
     notFound();
   }
 
-  const post = await prisma.post.findUnique({ where: { id: params.id } });
+  const post = await prisma.post.findUnique({
+    where: { id: params.id },
+    include: {
+      files: {
+        orderBy: { createdAt: 'asc' },
+        select: {
+          id: true,
+          filename: true,
+          storedAs: true,
+          mimeType: true,
+          size: true,
+        },
+      },
+    },
+  });
   if (!post) notFound();
 
   // Ownership: AUTHOR doar pe ale lui, ADMIN orice.
@@ -78,6 +93,11 @@ export default async function EditPostPage({
             slug: post.slug,
           }}
         />
+
+        {/* Manager atașamente */}
+        <div className="mt-10">
+          <FileUpload postId={post.id} initialFiles={post.files} />
+        </div>
       </section>
     </main>
   );

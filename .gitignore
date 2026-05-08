@@ -44,3 +44,7 @@ prisma/migrations/
 .agents/
 skills-lock.json
 .claude/
+
+# Fișiere uploadate de utilizatori (NU vrem să commit-uim conținut user)
+public/uploads/*
+!public/uploads/.gitkeep
