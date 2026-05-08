@@ -35,6 +35,25 @@ export const registerSchema = z.object({
   password: passwordSchema,
 });
 
+// ========= 2FA (TOTP) =========
+
+// Cod TOTP — exact 6 cifre (RFC 6238 default).
+export const totpCodeSchema = z.string().regex(/^\d{6}$/, 'Codul trebuie să aibă 6 cifre');
+
+// Activare 2FA — primește secret-ul (generat la /setup) + codul de verificare
+// din aplicația de autentificare. Verificăm că secret-ul a fost generat de noi
+// (format base32 standard speakeasy ~ 32 caractere alfanumerice mari).
+export const enable2FASchema = z.object({
+  secret: z.string().regex(/^[A-Z2-7]{16,64}$/, 'Secret invalid'),
+  code: totpCodeSchema,
+});
+
+// Dezactivare 2FA — cere parola pentru re-verificare (defense in depth:
+// chiar dacă atacatorul fură sesiunea, nu poate dezactiva 2FA fără parolă).
+export const disable2FASchema = z.object({
+  password: z.string().min(1, 'Parola e obligatorie').max(128),
+});
+
 // ========= RESET PAROLĂ =========
 
 export const forgotPasswordSchema = z.object({

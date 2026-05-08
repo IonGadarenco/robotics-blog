@@ -35,6 +35,13 @@ export default function HeaderActions() {
         >
           ⭐ Salvate
         </Link>
+        <Link
+          href="/profile/2fa"
+          className="text-carbon-300 hover:text-spark-400 transition-colors font-mono text-sm uppercase tracking-wider"
+          title="Gestiune 2FA"
+        >
+          🔐 2FA
+        </Link>
         {canPost && (
           <Link href="/dashboard" className="btn-secondary text-sm">
             Dashboard
