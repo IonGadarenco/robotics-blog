@@ -25,10 +25,6 @@ const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
 // automat când conectezi un Blob store la proiect.
 const useBlob = !!process.env.BLOB_READ_WRITE_TOKEN;
 
-// URL-ul public al store-ului Blob. Vercel îl expune ca env var publică
-// (NEXT_PUBLIC_*) ca să fie accesibil și în client components la randare.
-const BLOB_PUBLIC_URL = process.env.NEXT_PUBLIC_BLOB_PUBLIC_URL || '';
-
 // Mapare MIME -> extensie acceptată. Cross-check-ul e crucial:
 // dacă cineva trimite un fișier .png cu MIME type application/zip, refuzăm.
 export const MIME_EXTENSION_MAP: Record<string, string[]> = {
@@ -73,8 +69,11 @@ function validateStoredName(storedName: string): boolean {
   return /^[a-f0-9]{64}\.[a-z0-9]{1,8}$/.test(storedName);
 }
 
-// Salvează fișierul în backend-ul activ. Returnează NUMELE stocat
-// (același cu input-ul) — caller-ul îl pune în DB ca storedAs/coverImage.
+// Salvează fișierul în backend-ul activ.
+// Local mode: returnează DOAR filename-ul (URL e construit cu /uploads/<n>).
+// Blob mode: returnează URL-ul COMPLET returnat de Vercel (https://...).
+// Caller-ul stochează ce primește direct în DB (storedAs/coverImage).
+// fileUrl() distinge la randare între cele 2 formate.
 export async function saveFile(file: File, storedName: string): Promise<string> {
   if (!validateStoredName(storedName)) {
     throw new Error('Nume fișier invalid');
@@ -84,16 +83,16 @@ export async function saveFile(file: File, storedName: string): Promise<string> 
   const buffer = Buffer.from(arrayBuffer);
 
   if (useBlob) {
-    // Modul Vercel Blob — încărcare prin SDK
     const { put } = await import('@vercel/blob');
-    await put(storedName, buffer, {
+    const result = await put(storedName, buffer, {
       access: 'public',
       contentType: file.type,
       // addRandomSuffix=false: păstrăm numele exact pe care l-am generat
       // (avem deja 256 bit entropie, nu mai e nevoie de suffix Vercel)
       addRandomSuffix: false,
     });
-    return storedName;
+    // result.url = "https://<storeId>.public.blob.vercel-storage.com/<storedName>"
+    return result.url;
   }
 
   // Modul local filesystem
@@ -106,26 +105,31 @@ export async function saveFile(file: File, storedName: string): Promise<string> 
   return storedName;
 }
 
-export async function deleteFile(storedName: string): Promise<void> {
-  if (!validateStoredName(storedName)) {
-    throw new Error('Nume fișier invalid');
-  }
-
-  if (useBlob) {
+// Acceptă fie URL Blob complet, fie filename local (depinde de modul în care
+// a fost stocat la saveFile). Detectează automat ce e.
+export async function deleteFile(stored: string): Promise<void> {
+  // Cazul Blob: URL absolut Vercel
+  if (stored.startsWith('https://') && stored.includes('.public.blob.vercel-storage.com')) {
     const { del } = await import('@vercel/blob');
-    // Construim URL-ul Blob (necesar pentru del())
-    const url = `${BLOB_PUBLIC_URL}/${storedName}`;
     try {
-      await del(url);
+      await del(stored);
     } catch (err: any) {
-      // Idempotent — dacă nu există, nu aruncăm
       console.error('Blob delete failed:', err);
     }
     return;
   }
 
+  // Backward compat: dacă vine cu /uploads/ prefix, scoatem
+  const filename = stored.startsWith('/uploads/')
+    ? stored.replace('/uploads/', '')
+    : stored;
+
+  if (!validateStoredName(filename)) {
+    throw new Error('Nume fișier invalid');
+  }
+
   // Modul local
-  const fullPath = path.join(UPLOAD_DIR, storedName);
+  const fullPath = path.join(UPLOAD_DIR, filename);
   if (!fullPath.startsWith(UPLOAD_DIR)) {
     throw new Error('Path traversal detectat');
   }

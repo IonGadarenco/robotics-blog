@@ -1,29 +1,23 @@
 // src/lib/file-url.ts
-// Helper pur de calcul URL — fără side-effects, fără import-uri Node.
-// Poate fi importat și de client components (spre deosebire de storage.ts
-// care folosește node:fs și node:path și e doar server-side).
+// Helper pur — fără side-effects, fără import-uri Node.
+// Importabil din client components.
+//
+// Strategie simplificată: în BD avem fie URL absolut (Blob), fie filename
+// local (mod dev). Detectăm și returnăm ce trebuie pentru tag-uri src=.
 
-export function fileUrl(storedName: string | null | undefined): string {
-  if (!storedName) return '';
+export function fileUrl(stored: string | null | undefined): string {
+  if (!stored) return '';
 
-  // Backward compat: URL absolut (data veche care a stocat full URL).
-  if (storedName.startsWith('http://') || storedName.startsWith('https://')) {
-    return storedName;
+  // URL absolut (Blob în prod sau orice URL extern stocat) → pasăm direct
+  if (stored.startsWith('http://') || stored.startsWith('https://')) {
+    return stored;
   }
 
-  const publicUrl = process.env.NEXT_PUBLIC_BLOB_PUBLIC_URL;
-
-  // Backward compat: prefix /uploads/ (data veche dinainte de refactor).
-  if (storedName.startsWith('/uploads/')) {
-    if (publicUrl) {
-      return `${publicUrl}/${storedName.replace('/uploads/', '')}`;
-    }
-    return storedName;
+  // Backward compat: prefix /uploads/ deja prezent
+  if (stored.startsWith('/uploads/')) {
+    return stored;
   }
 
-  // Cazul normal: storedName e doar filename
-  if (publicUrl) {
-    return `${publicUrl}/${storedName}`;
-  }
-  return `/uploads/${storedName}`;
+  // Cazul normal local: filename pur → construim path-ul public
+  return `/uploads/${stored}`;
 }
