@@ -12,6 +12,7 @@ import { prisma } from '@/lib/prisma';
 import HeaderActions from '@/components/HeaderActions';
 import EditForm from './EditForm';
 import FileUpload from './FileUpload';
+import CoverImageUpload from './CoverImageUpload';
 
 export default async function EditPostPage({
   params,
@@ -78,6 +79,11 @@ export default async function EditPostPage({
         <p className="text-carbon-500 font-mono text-xs mb-10">
           /posts/{post.slug} · {post.published ? 'PUBLICAT' : 'DRAFT'}
         </p>
+
+        {/* Cover image — primul, ca să-l vezi sus */}
+        <div className="mb-10">
+          <CoverImageUpload postId={post.id} initialCover={post.coverImage} />
+        </div>
 
         <EditForm
           post={{

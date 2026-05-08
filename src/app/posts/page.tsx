@@ -168,19 +168,31 @@ export default async function PostsListPage({
               const title = locale === 'en' ? post.titleEn : post.titleRo;
               const excerpt = locale === 'en' ? post.excerptEn : post.excerptRo;
               return (
-                <article key={post.id} className="card group">
-                  {cat && <span className={`badge ${cat.class} mb-4`}>{locale === 'en' ? cat.en : cat.ro}</span>}
-                  <h2 className="font-display font-bold text-xl mb-3 group-hover:text-spark-400 transition-colors">
-                    <Link href={`/posts/${post.slug}`}>{title}</Link>
-                  </h2>
-                  <p className="text-carbon-400 text-sm mb-4 line-clamp-3">
-                    {excerpt}
-                  </p>
-                  <div className="flex items-center justify-between text-xs text-carbon-500 font-mono">
-                    <span>{post.author.name}</span>
-                    <div className="flex gap-3">
-                      <span>💬 {post._count.comments}</span>
-                      <span>⭐ {post._count.savedBy}</span>
+                <article key={post.id} className="card group p-0 overflow-hidden">
+                  {post.coverImage && (
+                    <Link href={`/posts/${post.slug}`}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={post.coverImage}
+                        alt={title}
+                        className="w-full h-40 object-cover border-b border-carbon-700"
+                      />
+                    </Link>
+                  )}
+                  <div className="p-6">
+                    {cat && <span className={`badge ${cat.class} mb-4`}>{locale === 'en' ? cat.en : cat.ro}</span>}
+                    <h2 className="font-display font-bold text-xl mb-3 group-hover:text-spark-400 transition-colors">
+                      <Link href={`/posts/${post.slug}`}>{title}</Link>
+                    </h2>
+                    <p className="text-carbon-400 text-sm mb-4 line-clamp-3">
+                      {excerpt}
+                    </p>
+                    <div className="flex items-center justify-between text-xs text-carbon-500 font-mono">
+                      <span>{post.author.name}</span>
+                      <div className="flex gap-3">
+                        <span>💬 {post._count.comments}</span>
+                        <span>⭐ {post._count.savedBy}</span>
+                      </div>
                     </div>
                   </div>
                 </article>

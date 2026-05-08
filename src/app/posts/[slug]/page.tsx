@@ -161,6 +161,16 @@ export default async function PostDetailPage({
           {t.back}
         </Link>
 
+        {/* Cover image — afișată dacă există */}
+        {post.coverImage && (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={post.coverImage}
+            alt={title}
+            className="w-full max-h-96 object-cover border border-carbon-800 mb-8"
+          />
+        )}
+
         {/* Header articol */}
         <header className="mb-10 pb-10 border-b border-carbon-800">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-6">

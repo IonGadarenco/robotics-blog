@@ -174,7 +174,18 @@ export default async function HomePage() {
               const title = locale === 'en' ? post.titleEn : post.titleRo;
               const excerpt = locale === 'en' ? post.excerptEn : post.excerptRo;
               return (
-                <article key={post.id} className="card group">
+                <article key={post.id} className="card group p-0 overflow-hidden">
+                  {post.coverImage && (
+                    <Link href={`/posts/${post.slug}`}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={post.coverImage}
+                        alt={title}
+                        className="w-full h-40 object-cover border-b border-carbon-700"
+                      />
+                    </Link>
+                  )}
+                  <div className="p-6">
                   <span className={`badge ${cat.class} mb-4`}>{catLabel(post.category, locale)}</span>
                   <h3 className="font-display font-bold text-xl mb-3 group-hover:text-spark-400 transition-colors">
                     <Link href={`/posts/${post.slug}`}>{title}</Link>
@@ -188,6 +199,7 @@ export default async function HomePage() {
                       <span>💬 {post._count.comments}</span>
                       <span>⭐ {post._count.savedBy}</span>
                     </div>
+                  </div>
                   </div>
                 </article>
               );
