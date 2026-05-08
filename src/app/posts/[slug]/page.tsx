@@ -7,9 +7,12 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import type { Category } from '@prisma/client';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import HeaderActions from '@/components/HeaderActions';
 import CommentSection from '@/components/CommentSection';
+import SaveButton from '@/components/SaveButton';
 
 // Mapare categorie -> etichetă vizibilă + clasă badge (consistent cu /posts și /).
 const CATEGORY_LABELS: Record<Category, { label: string; class: string }> = {
@@ -78,6 +81,16 @@ export default async function PostDetailPage({
   // Crește views asincron, fără să blocăm randarea.
   incrementViews(post.id);
 
+  // Stare salvat — pentru SaveButton. Fetch pe server ca să nu avem flicker.
+  const session = await getServerSession(authOptions);
+  const userId = session?.user ? ((session.user as any).id as string) : null;
+  const isSaved = userId
+    ? !!(await prisma.savedPost.findUnique({
+        where: { userId_postId: { userId, postId: post.id } },
+        select: { id: true },
+      }))
+    : false;
+
   const category = CATEGORY_LABELS[post.category];
 
   // Format dată în limba română.
@@ -125,7 +138,14 @@ export default async function PostDetailPage({
 
         {/* Header articol */}
         <header className="mb-10 pb-10 border-b border-carbon-800">
-          <span className={`badge ${category.class} mb-6 inline-block`}>{category.label}</span>
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+            <span className={`badge ${category.class} inline-block`}>{category.label}</span>
+            <SaveButton
+              postId={post.id}
+              initialSaved={isSaved}
+              isAuthenticated={!!userId}
+            />
+          </div>
           <h1 className="font-display font-bold text-4xl md:text-5xl mb-6 leading-tight">
             {post.titleRo}
           </h1>

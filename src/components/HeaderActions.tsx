@@ -28,6 +28,13 @@ export default function HeaderActions() {
         <span className="hidden md:inline text-carbon-400 font-mono text-xs">
           // {session.user.name}
         </span>
+        <Link
+          href="/saved"
+          className="text-carbon-300 hover:text-spark-400 transition-colors font-mono text-sm uppercase tracking-wider"
+          title="Articole salvate"
+        >
+          ⭐ Salvate
+        </Link>
         {canPost && (
           <Link href="/dashboard" className="btn-secondary text-sm">
             Dashboard
