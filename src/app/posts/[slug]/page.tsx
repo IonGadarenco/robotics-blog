@@ -14,6 +14,7 @@ import HeaderActions from '@/components/HeaderActions';
 import CommentSection from '@/components/CommentSection';
 import SaveButton from '@/components/SaveButton';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import MarkdownContent from '@/components/MarkdownContent';
 import { getLocale } from '@/lib/locale';
 
 // Mapare categorie -> etichetă vizibilă + clasă badge (consistent cu /posts și /).
@@ -217,11 +218,12 @@ export default async function PostDetailPage({
             whitespace-pre-wrap păstrează newline-urile din BD pentru afișare.
             Notă: pentru P1.4 (rich text + sanitizare) vom înlocui aceasta cu
             renderer Markdown + DOMPurify pentru conținut UGC. */}
-        <div className="prose prose-invert max-w-none">
-          <div className="text-carbon-200 leading-relaxed whitespace-pre-wrap font-sans text-base">
-            {content}
-          </div>
-        </div>
+        {/*
+          Conținut Markdown — react-markdown nu execută HTML brut.
+          Atacatorul nu poate insera <script> sau <iframe> etc.
+          Vezi MarkdownContent.tsx pentru lista de tag-uri permise.
+        */}
+        <MarkdownContent source={content} />
 
         {/* Atașamente — afișate doar dacă există */}
         {post.files.length > 0 && (

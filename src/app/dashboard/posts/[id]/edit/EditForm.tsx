@@ -225,6 +225,18 @@ export default function EditForm({ post }: { post: PostInput }) {
       </div>
 
       {/* Content */}
+      <div>
+        <p className="text-carbon-400 text-xs font-mono mb-3 leading-relaxed">
+          <span className="text-circuit-400">Markdown suportat:</span>{' '}
+          <code className="text-spark-400">**bold**</code>,{' '}
+          <code className="text-spark-400"># Titlu</code>,{' '}
+          <code className="text-spark-400">## Subtitlu</code>,{' '}
+          <code className="text-spark-400">- listă</code>,{' '}
+          <code className="text-spark-400">[text](url)</code>,{' '}
+          <code className="text-spark-400">![alt](url)</code> pentru imagini inline.
+          Folosește butonul 📋 din secțiunea atașamente pentru a insera referințe rapid.
+        </p>
+      </div>
       <div className="grid md:grid-cols-2 gap-6">
         <div>
           <label htmlFor="contentRo" className="block text-xs font-mono uppercase tracking-wider mb-2 text-carbon-300">

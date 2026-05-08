@@ -216,6 +216,19 @@ export default function NewPostPage() {
             </div>
           </div>
 
+          {/* Hint Markdown */}
+          <div>
+            <p className="text-carbon-400 text-xs font-mono leading-relaxed">
+              <span className="text-circuit-400">Markdown suportat:</span>{' '}
+              <code className="text-spark-400">**bold**</code>,{' '}
+              <code className="text-spark-400"># Titlu</code>,{' '}
+              <code className="text-spark-400">- listă</code>,{' '}
+              <code className="text-spark-400">[text](url)</code>,{' '}
+              <code className="text-spark-400">![alt](url)</code>.
+              După salvare, în pagina de editare poți încărca imagini și obține referințe rapid.
+            </p>
+          </div>
+
           {/* Conținut */}
           <div className="grid md:grid-cols-2 gap-6">
             <div>

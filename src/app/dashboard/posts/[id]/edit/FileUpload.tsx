@@ -89,6 +89,33 @@ export default function FileUpload({
     }
   }
 
+  // Generează referința Markdown potrivită pentru tipul fișierului.
+  // Imaginile -> ![alt](url) (apar inline). Restul -> [filename](url) (link).
+  function buildMarkdownRef(f: AttachedFile): string {
+    const url = `/uploads/${f.storedAs}`;
+    if (f.mimeType.startsWith('image/')) {
+      return `![${f.filename}](${url})`;
+    }
+    return `[${f.filename}](${url})`;
+  }
+
+  async function copyMarkdown(f: AttachedFile) {
+    const md = buildMarkdownRef(f);
+    try {
+      await navigator.clipboard.writeText(md);
+      // Feedback simplu prin alert nativ — UX minim dar funcțional.
+      // Pentru un toast frumos am adăuga ceva ca react-hot-toast în viitor.
+      const msg = f.mimeType.startsWith('image/')
+        ? 'Markdown copiat. Lipește în conținut: ![nume](url)'
+        : 'Link copiat. Lipește în conținut: [nume](url)';
+      // eslint-disable-next-line no-alert
+      alert(msg);
+    } catch {
+      // eslint-disable-next-line no-alert
+      alert('Nu am putut copia. Selectează manual din câmpul de mai jos.');
+    }
+  }
+
   async function handleDelete(fileId: string, filename: string) {
     if (!window.confirm(`Ștergi atașamentul "${filename}"?`)) return;
     try {
@@ -120,6 +147,10 @@ export default function FileUpload({
       <p className="text-carbon-400 text-xs font-mono leading-relaxed">
         Tipuri permise: JPG, PNG, WebP, PDF, ZIP, STL.
         Max 10 MB per fișier, 10 atașamente per articol.
+        <br />
+        <span className="text-circuit-400">Tip:</span> apasă <span className="text-spark-400">📋</span> pentru a
+        copia referința Markdown și a o lipi în câmpurile <span className="text-spark-400">Conținut</span>.
+        Imaginile apar inline; restul ca link de download.
       </p>
 
       {/* Listă fișiere existente */}
@@ -142,6 +173,14 @@ export default function FileUpload({
               <span className="text-xs font-mono text-carbon-500 flex-shrink-0">
                 {formatSize(f.size)}
               </span>
+              <button
+                type="button"
+                onClick={() => copyMarkdown(f)}
+                className="text-circuit-400 hover:text-circuit-300 font-mono text-xs flex-shrink-0"
+                title="Copiază referința Markdown pentru a o lipi în conținut"
+              >
+                📋
+              </button>
               <button
                 type="button"
                 onClick={() => handleDelete(f.id, f.filename)}
