@@ -7,17 +7,23 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+type Locale = 'ro' | 'en';
+
 interface Props {
   postId: string;
   initialSaved: boolean;
   // Dacă utilizatorul nu e logat, server-ul ne dă null și butonul redirect-ează la login.
   isAuthenticated: boolean;
+  locale?: Locale;
 }
 
-export default function SaveButton({ postId, initialSaved, isAuthenticated }: Props) {
+export default function SaveButton({ postId, initialSaved, isAuthenticated, locale = 'ro' }: Props) {
   const router = useRouter();
   const [saved, setSaved] = useState(initialSaved);
   const [loading, setLoading] = useState(false);
+  const t = locale === 'en'
+    ? { save: 'Save', saved: 'Saved', loginToSave: 'Log in to save', removeFromFav: 'Remove from favorites', saveForLater: 'Save for later' }
+    : { save: 'Salvează', saved: 'Salvat', loginToSave: 'Autentifică-te ca să salvezi', removeFromFav: 'Elimină din favorite', saveForLater: 'Salvează pentru mai târziu' };
 
   async function handleClick() {
     if (!isAuthenticated) {
@@ -61,10 +67,10 @@ export default function SaveButton({ postId, initialSaved, isAuthenticated }: Pr
       disabled={loading}
       title={
         !isAuthenticated
-          ? 'Autentifică-te ca să salvezi'
+          ? t.loginToSave
           : saved
-            ? 'Elimină din favorite'
-            : 'Salvează pentru mai târziu'
+            ? t.removeFromFav
+            : t.saveForLater
       }
       className={`inline-flex items-center gap-2 px-4 py-2 border-2 font-mono font-bold uppercase tracking-wider text-sm transition-colors disabled:opacity-50 ${
         saved
@@ -73,7 +79,7 @@ export default function SaveButton({ postId, initialSaved, isAuthenticated }: Pr
       }`}
     >
       <span>{saved ? '⭐' : '☆'}</span>
-      <span>{saved ? 'Salvat' : 'Salvează'}</span>
+      <span>{saved ? t.saved : t.save}</span>
     </button>
   );
 }

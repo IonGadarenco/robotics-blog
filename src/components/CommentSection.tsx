@@ -6,10 +6,15 @@ import Link from 'next/link';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { getLocale } from '@/lib/locale';
 import CommentForm from './CommentForm';
 import DeleteCommentButton from './DeleteCommentButton';
 
 export default async function CommentSection({ postId }: { postId: string }) {
+  const locale = getLocale();
+  const t = locale === 'en'
+    ? { comments: 'COMMENTS', discussion: 'Discussion', empty: '// no comments yet — be the first!', loginPrompt: '// You must be authenticated to comment', login: 'Login', register: 'Sign up' }
+    : { comments: 'COMENTARII', discussion: 'Discuție', empty: '// niciun comentariu încă — fii primul!', loginPrompt: '// Trebuie să fii autentificat ca să comentezi', login: 'Autentificare', register: 'Înregistrare' };
   const session = await getServerSession(authOptions);
   const userId = session?.user ? ((session.user as any).id as string) : null;
   const role = session?.user ? ((session.user as any).role as string) : null;
@@ -27,14 +32,14 @@ export default async function CommentSection({ postId }: { postId: string }) {
   return (
     <section className="mt-16 pt-10 border-t border-carbon-800">
       <div className="text-circuit-500 font-mono text-sm mb-4">
-        // COMENTARII ({comments.length})
+        // {t.comments} ({comments.length})
       </div>
-      <h2 className="font-display font-bold text-2xl mb-8">Discuție</h2>
+      <h2 className="font-display font-bold text-2xl mb-8">{t.discussion}</h2>
 
       {/* Lista de comentarii */}
       {comments.length === 0 ? (
         <p className="text-carbon-500 font-mono text-sm mb-10">
-          // niciun comentariu încă — fii primul!
+          {t.empty}
         </p>
       ) : (
         <div className="space-y-4 mb-10">
@@ -74,18 +79,18 @@ export default async function CommentSection({ postId }: { postId: string }) {
 
       {/* Formular sau prompt de login */}
       {session?.user ? (
-        <CommentForm postId={postId} />
+        <CommentForm postId={postId} locale={locale} />
       ) : (
         <div className="card text-center py-8">
           <p className="text-carbon-300 mb-4 font-mono text-sm">
-            // Trebuie să fii autentificat ca să comentezi
+            {t.loginPrompt}
           </p>
           <div className="flex gap-3 justify-center flex-wrap">
             <Link href="/auth/login" className="btn-primary">
-              Autentificare
+              {t.login}
             </Link>
             <Link href="/auth/register" className="btn-secondary">
-              Înregistrare
+              {t.register}
             </Link>
           </div>
         </div>

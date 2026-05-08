@@ -13,14 +13,16 @@ import { prisma } from '@/lib/prisma';
 import HeaderActions from '@/components/HeaderActions';
 import CommentSection from '@/components/CommentSection';
 import SaveButton from '@/components/SaveButton';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { getLocale } from '@/lib/locale';
 
 // Mapare categorie -> etichetă vizibilă + clasă badge (consistent cu /posts și /).
-const CATEGORY_LABELS: Record<Category, { label: string; class: string }> = {
-  ROBOTICS: { label: 'Robotică', class: 'badge-robotics' },
-  THREE_D_PRINT: { label: 'Imprimare 3D', class: 'badge-3d' },
-  WEB_DEV: { label: 'Web Dev', class: 'badge-web' },
-  TUTORIAL: { label: 'Tutorial', class: 'badge-tutorial' },
-  PROJECT: { label: 'Proiect', class: 'badge-robotics' },
+const CATEGORY_LABELS: Record<Category, { ro: string; en: string; class: string }> = {
+  ROBOTICS: { ro: 'Robotică', en: 'Robotics', class: 'badge-robotics' },
+  THREE_D_PRINT: { ro: 'Imprimare 3D', en: '3D Printing', class: 'badge-3d' },
+  WEB_DEV: { ro: 'Web Dev', en: 'Web Dev', class: 'badge-web' },
+  TUTORIAL: { ro: 'Tutorial', en: 'Tutorial', class: 'badge-tutorial' },
+  PROJECT: { ro: 'Proiect', en: 'Project', class: 'badge-robotics' },
 };
 
 // Caută post-ul cu acest slug. Filtrăm pe published=true ca să nu expunem
@@ -61,12 +63,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const post = await getPost(params.slug);
   if (!post) return { title: 'Articol negăsit' };
+  const locale = getLocale();
+  const title = locale === 'en' ? post.titleEn : post.titleRo;
+  const excerpt = locale === 'en' ? post.excerptEn : post.excerptRo;
   return {
-    title: post.titleRo,
-    description: post.excerptRo,
+    title,
+    description: excerpt,
     openGraph: {
-      title: post.titleRo,
-      description: post.excerptRo,
+      title,
+      description: excerpt,
       type: 'article',
       publishedTime: post.publishedAt?.toISOString(),
       authors: [post.author.name],
@@ -101,11 +106,20 @@ export default async function PostDetailPage({
       }))
     : false;
 
+  const locale = getLocale();
   const category = CATEGORY_LABELS[post.category];
+  const title = locale === 'en' ? post.titleEn : post.titleRo;
+  const excerpt = locale === 'en' ? post.excerptEn : post.excerptRo;
+  const content = locale === 'en' ? post.contentEn : post.contentRo;
 
-  // Format dată în limba română.
+  // Etichete UI pentru pagină.
+  const t = locale === 'en'
+    ? { allProjects: 'All projects', back: '← All projects', author: 'by', views: 'views', comments: 'comments', saves: 'saves', attachments: 'ATTACHMENTS', loginPrompt: 'Login' }
+    : { allProjects: 'Toate proiectele', back: '← Toate proiectele', author: 'de', views: 'vizualizări', comments: 'comentarii', saves: 'salvări', attachments: 'ATAȘAMENTE', loginPrompt: 'Autentificare' };
+
+  // Format dată în limba selectată.
   const publishedDate = post.publishedAt
-    ? new Intl.DateTimeFormat('ro-RO', {
+    ? new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : 'ro-RO', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -125,14 +139,15 @@ export default async function PostDetailPage({
               Robo<span className="text-spark-500">Lab</span>
             </span>
           </Link>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4">
             <Link
               href="/posts"
               className="text-carbon-300 hover:text-spark-400 transition-colors font-mono text-sm uppercase tracking-wider"
             >
-              Toate proiectele
+              {t.allProjects}
             </Link>
-            <HeaderActions />
+            <LanguageSwitcher current={locale} />
+            <HeaderActions locale={locale} />
           </div>
         </nav>
       </header>
@@ -143,32 +158,35 @@ export default async function PostDetailPage({
           href="/posts"
           className="inline-block mb-8 text-carbon-400 hover:text-spark-400 font-mono text-sm"
         >
-          ← Toate proiectele
+          {t.back}
         </Link>
 
         {/* Header articol */}
         <header className="mb-10 pb-10 border-b border-carbon-800">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-            <span className={`badge ${category.class} inline-block`}>{category.label}</span>
+            <span className={`badge ${category.class} inline-block`}>
+              {locale === 'en' ? category.en : category.ro}
+            </span>
             <SaveButton
               postId={post.id}
               initialSaved={isSaved}
               isAuthenticated={!!userId}
+              locale={locale}
             />
           </div>
           <h1 className="font-display font-bold text-4xl md:text-5xl mb-6 leading-tight">
-            {post.titleRo}
+            {title}
           </h1>
 
           {/* Excerpt subliniat */}
           <p className="text-carbon-300 text-lg leading-relaxed mb-8">
-            {post.excerptRo}
+            {excerpt}
           </p>
 
           {/* Meta: autor, dată, statistici */}
           <div className="flex flex-wrap items-center gap-4 text-sm font-mono text-carbon-500">
             <span>
-              de <span className="text-carbon-200">{post.author.name}</span>
+              {t.author} <span className="text-carbon-200">{post.author.name}</span>
             </span>
             {publishedDate && (
               <>
@@ -177,11 +195,11 @@ export default async function PostDetailPage({
               </>
             )}
             <span>•</span>
-            <span>👁 {post.views} vizualizări</span>
+            <span>👁 {post.views} {t.views}</span>
             <span>•</span>
-            <span>💬 {post._count.comments} comentarii</span>
+            <span>💬 {post._count.comments} {t.comments}</span>
             <span>•</span>
-            <span>⭐ {post._count.savedBy} salvări</span>
+            <span>⭐ {post._count.savedBy} {t.saves}</span>
           </div>
         </header>
 
@@ -191,7 +209,7 @@ export default async function PostDetailPage({
             renderer Markdown + DOMPurify pentru conținut UGC. */}
         <div className="prose prose-invert max-w-none">
           <div className="text-carbon-200 leading-relaxed whitespace-pre-wrap font-sans text-base">
-            {post.contentRo}
+            {content}
           </div>
         </div>
 
@@ -199,7 +217,7 @@ export default async function PostDetailPage({
         {post.files.length > 0 && (
           <section className="mt-12 pt-8 border-t border-carbon-800">
             <div className="text-circuit-500 font-mono text-sm mb-4">
-              // ATAȘAMENTE ({post.files.length})
+              // {t.attachments} ({post.files.length})
             </div>
             <ul className="space-y-2">
               {post.files.map((f) => {

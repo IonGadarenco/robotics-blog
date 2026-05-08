@@ -7,15 +7,17 @@ import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import type { Category } from '@prisma/client';
 import HeaderActions from '@/components/HeaderActions';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { getLocale } from '@/lib/locale';
 
 // Valorile permise pentru filtru — listă albă (whitelist).
 // Niciun input din URL nu se trimite direct în query Prisma fără să fie aici.
-const CATEGORIES: { value: Category; label: string; class: string }[] = [
-  { value: 'ROBOTICS', label: 'Robotică', class: 'badge-robotics' },
-  { value: 'THREE_D_PRINT', label: 'Imprimare 3D', class: 'badge-3d' },
-  { value: 'WEB_DEV', label: 'Web Dev', class: 'badge-web' },
-  { value: 'TUTORIAL', label: 'Tutorial', class: 'badge-tutorial' },
-  { value: 'PROJECT', label: 'Proiect', class: 'badge-robotics' },
+const CATEGORIES: { value: Category; ro: string; en: string; class: string }[] = [
+  { value: 'ROBOTICS', ro: 'Robotică', en: 'Robotics', class: 'badge-robotics' },
+  { value: 'THREE_D_PRINT', ro: 'Imprimare 3D', en: '3D Printing', class: 'badge-3d' },
+  { value: 'WEB_DEV', ro: 'Web Dev', en: 'Web Dev', class: 'badge-web' },
+  { value: 'TUTORIAL', ro: 'Tutorial', en: 'Tutorial', class: 'badge-tutorial' },
+  { value: 'PROJECT', ro: 'Proiect', en: 'Project', class: 'badge-robotics' },
 ];
 
 const PAGE_SIZE = 9; // 3 coloane × 3 rânduri
@@ -58,6 +60,10 @@ export default async function PostsListPage({
   const category = findCategory(searchParams.category);
   const page = parsePage(searchParams.page);
   const skip = (page - 1) * PAGE_SIZE;
+  const locale = getLocale();
+  const t = locale === 'en'
+    ? { allBtn: 'All', title: 'All projects', empty: 'No projects match your filters.', back: '← Back to all', prev: '← Previous', next: 'Next →', pageOf: 'Page', of: 'of', author: 'by', counter: (n: number) => `${n} project${n === 1 ? '' : 's'} published`, inCat: (c: string) => ` in category ${c}`, home: 'Home' }
+    : { allBtn: 'Toate', title: 'Toate proiectele', empty: 'Niciun proiect găsit pentru filtrele selectate.', back: '← Înapoi la toate', prev: '← Anterior', next: 'Următor →', pageOf: 'Pagina', of: 'din', author: 'de', counter: (n: number) => `${n} ${n === 1 ? 'proiect publicat' : 'proiecte publicate'}`, inCat: (c: string) => ` în categoria ${c}`, home: 'Acasă' };
 
   // WHERE clause comună pentru COUNT și findMany.
   const where = {
@@ -95,11 +101,12 @@ export default async function PostsListPage({
               Robo<span className="text-spark-500">Lab</span>
             </span>
           </Link>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4">
             <Link href="/" className="text-carbon-300 hover:text-spark-400 transition-colors font-mono text-sm uppercase tracking-wider">
-              Acasă
+              {t.home}
             </Link>
-            <HeaderActions />
+            <LanguageSwitcher current={locale} />
+            <HeaderActions locale={locale} />
           </div>
         </nav>
       </header>
@@ -108,11 +115,11 @@ export default async function PostsListPage({
         <div className="mb-10">
           <div className="text-circuit-500 font-mono text-sm mb-2">// PROIECTE</div>
           <h1 className="font-display font-bold text-4xl md:text-5xl mb-4">
-            Toate proiectele
+            {t.title}
           </h1>
           <p className="text-carbon-400">
-            {total} {total === 1 ? 'proiect publicat' : 'proiecte publicate'}
-            {category ? ` în categoria ${CATEGORIES.find((c) => c.value === category)?.label}` : ''}.
+            {t.counter(total)}
+            {category ? t.inCat((locale === 'en' ? CATEGORIES.find((c) => c.value === category)?.en : CATEGORIES.find((c) => c.value === category)?.ro) || '') : ''}.
           </p>
         </div>
 
@@ -126,7 +133,7 @@ export default async function PostsListPage({
                 : 'bg-carbon-800 text-carbon-300 hover:bg-carbon-700'
             }`}
           >
-            Toate
+            {t.allBtn}
           </Link>
           {CATEGORIES.map((c) => (
             <Link
@@ -138,7 +145,7 @@ export default async function PostsListPage({
                   : 'bg-carbon-800 text-carbon-300 hover:bg-carbon-700'
               }`}
             >
-              {c.label}
+              {locale === 'en' ? c.en : c.ro}
             </Link>
           ))}
         </div>
@@ -147,12 +154,10 @@ export default async function PostsListPage({
         {posts.length === 0 ? (
           <div className="card text-center py-16">
             <div className="text-carbon-500 font-mono mb-4">// EMPTY STATE</div>
-            <p className="text-carbon-300 mb-2">
-              Niciun proiect găsit pentru filtrele selectate.
-            </p>
+            <p className="text-carbon-300 mb-2">{t.empty}</p>
             {category && (
               <Link href="/posts" className="text-spark-400 font-mono text-sm hover:text-spark-300">
-                ← Înapoi la toate
+                {t.back}
               </Link>
             )}
           </div>
@@ -160,14 +165,16 @@ export default async function PostsListPage({
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {posts.map((post) => {
               const cat = CATEGORIES.find((c) => c.value === post.category);
+              const title = locale === 'en' ? post.titleEn : post.titleRo;
+              const excerpt = locale === 'en' ? post.excerptEn : post.excerptRo;
               return (
                 <article key={post.id} className="card group">
-                  {cat && <span className={`badge ${cat.class} mb-4`}>{cat.label}</span>}
+                  {cat && <span className={`badge ${cat.class} mb-4`}>{locale === 'en' ? cat.en : cat.ro}</span>}
                   <h2 className="font-display font-bold text-xl mb-3 group-hover:text-spark-400 transition-colors">
-                    <Link href={`/posts/${post.slug}`}>{post.titleRo}</Link>
+                    <Link href={`/posts/${post.slug}`}>{title}</Link>
                   </h2>
                   <p className="text-carbon-400 text-sm mb-4 line-clamp-3">
-                    {post.excerptRo}
+                    {excerpt}
                   </p>
                   <div className="flex items-center justify-between text-xs text-carbon-500 font-mono">
                     <span>{post.author.name}</span>
@@ -190,14 +197,14 @@ export default async function PostsListPage({
                 href={buildHref({ category, page: page - 1 })}
                 className="btn-secondary text-sm"
               >
-                ← Pagina anterioară
+                {t.prev}
               </Link>
             ) : (
-              <span className="text-carbon-600 font-mono text-sm">← Pagina anterioară</span>
+              <span className="text-carbon-600 font-mono text-sm">{t.prev}</span>
             )}
 
             <span className="font-mono text-sm text-carbon-400">
-              Pagina <span className="text-spark-400">{page}</span> din {totalPages}
+              {t.pageOf} <span className="text-spark-400">{page}</span> {t.of} {totalPages}
             </span>
 
             {page < totalPages ? (
@@ -205,10 +212,10 @@ export default async function PostsListPage({
                 href={buildHref({ category, page: page + 1 })}
                 className="btn-secondary text-sm"
               >
-                Pagina următoare →
+                {t.next}
               </Link>
             ) : (
-              <span className="text-carbon-600 font-mono text-sm">Pagina următoare →</span>
+              <span className="text-carbon-600 font-mono text-sm">{t.next}</span>
             )}
           </div>
         )}

@@ -6,11 +6,16 @@
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function CommentForm({ postId }: { postId: string }) {
+type Locale = 'ro' | 'en';
+
+export default function CommentForm({ postId, locale = 'ro' }: { postId: string; locale?: Locale }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = locale === 'en'
+    ? { label: 'Add a comment', placeholder: 'Comments are plain text — no HTML/script will be interpreted.', maxNote: '// max 2000 characters', sending: 'Posting...', submit: 'Send', netError: 'Network error.' }
+    : { label: 'Adaugă un comentariu', placeholder: 'Comentariile sunt text plain — niciun HTML/script nu va fi interpretat.', maxNote: '// max 2000 caractere', sending: 'Se postează...', submit: 'Trimite', netError: 'Eroare de rețea.' };
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -39,7 +44,7 @@ export default function CommentForm({ postId }: { postId: string }) {
       setLoading(false);
       router.refresh();
     } catch {
-      setError('Eroare de rețea.');
+      setError(t.netError);
       setLoading(false);
     }
   }
@@ -50,7 +55,7 @@ export default function CommentForm({ postId }: { postId: string }) {
         htmlFor="comment-content"
         className="block text-xs font-mono uppercase tracking-wider text-carbon-300"
       >
-        Adaugă un comentariu
+        {t.label}
       </label>
       <textarea
         id="comment-content"
@@ -59,7 +64,7 @@ export default function CommentForm({ postId }: { postId: string }) {
         minLength={2}
         maxLength={2000}
         rows={4}
-        placeholder="Comentariile sunt text plain — niciun HTML/script nu va fi interpretat."
+        placeholder={t.placeholder}
         className="input-field"
       />
       {error && (
@@ -67,14 +72,14 @@ export default function CommentForm({ postId }: { postId: string }) {
       )}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <p className="text-carbon-500 text-xs font-mono">
-          // max 2000 caractere
+          {t.maxNote}
         </p>
         <button
           type="submit"
           disabled={loading}
           className="btn-primary disabled:opacity-50 text-sm"
         >
-          {loading ? 'Se postează...' : 'Trimite'}
+          {loading ? t.sending : t.submit}
         </button>
       </div>
     </form>

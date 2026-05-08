@@ -7,8 +7,13 @@
 import Link from 'next/link';
 import { signOut, useSession } from 'next-auth/react';
 
-export default function HeaderActions() {
+type Locale = 'ro' | 'en';
+
+export default function HeaderActions({ locale = 'ro' }: { locale?: Locale }) {
   const { data: session, status } = useSession();
+  const t = locale === 'en'
+    ? { saved: 'Saved', savedTitle: 'Saved articles', logout: 'Logout', login: 'Login', register: 'Sign up', admin: 'Admin', adminTitle: 'Admin panel', twoFaTitle: 'Manage 2FA' }
+    : { saved: 'Salvate', savedTitle: 'Articole salvate', logout: 'Logout', login: 'Autentificare', register: 'Înregistrare', admin: 'Admin', adminTitle: 'Panou administrare', twoFaTitle: 'Gestiune 2FA' };
 
   // Pre-hidratare: nu știm încă starea sesiunii — afișăm placeholder.
   // Evităm flash-ul "Login/Register" → "Logout" la utilizatori autentificați.
@@ -32,14 +37,14 @@ export default function HeaderActions() {
         <Link
           href="/saved"
           className="text-carbon-300 hover:text-spark-400 transition-colors font-mono text-sm uppercase tracking-wider"
-          title="Articole salvate"
+          title={t.savedTitle}
         >
-          ⭐ Salvate
+          ⭐ {t.saved}
         </Link>
         <Link
           href="/profile/2fa"
           className="text-carbon-300 hover:text-spark-400 transition-colors font-mono text-sm uppercase tracking-wider"
-          title="Gestiune 2FA"
+          title={t.twoFaTitle}
         >
           🔐 2FA
         </Link>
@@ -52,9 +57,9 @@ export default function HeaderActions() {
           <Link
             href="/admin"
             className="text-red-400 hover:text-red-300 transition-colors font-mono text-sm uppercase tracking-wider"
-            title="Panou administrare"
+            title={t.adminTitle}
           >
-            ⚙ Admin
+            ⚙ {t.admin}
           </Link>
         )}
         {/* signOut() apelează endpoint-ul NextAuth, șterge cookie-ul HttpOnly
@@ -64,7 +69,7 @@ export default function HeaderActions() {
           onClick={() => signOut({ callbackUrl: '/' })}
           className="btn-secondary text-sm"
         >
-          Logout
+          {t.logout}
         </button>
       </div>
     );
@@ -73,10 +78,10 @@ export default function HeaderActions() {
   return (
     <div className="flex items-center gap-3">
       <Link href="/auth/login" className="btn-secondary text-sm">
-        Autentificare
+        {t.login}
       </Link>
       <Link href="/auth/register" className="btn-primary text-sm">
-        Înregistrare
+        {t.register}
       </Link>
     </div>
   );
