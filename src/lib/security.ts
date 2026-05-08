@@ -2,7 +2,6 @@
 // Utilități cheie de securitate pentru aplicație
 
 import bcrypt from 'bcryptjs';
-import DOMPurify from 'isomorphic-dompurify';
 import { prisma } from './prisma';
 import type { AuthEvent } from '@prisma/client';
 
@@ -21,18 +20,39 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 // ========= SANITIZARE HTML =========
-// Apărare împotriva XSS în conținut user-generated (comentarii, articole)
-
-export function sanitizeHtml(dirty: string): string {
-  return DOMPurify.sanitize(dirty, {
-    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li', 'code', 'pre', 'blockquote', 'h2', 'h3', 'h4'],
-    ALLOWED_ATTR: ['href', 'title', 'target', 'rel'],
-    ALLOW_DATA_ATTR: false,
-  });
-}
+// Apărare împotriva XSS în conținut user-generated (comentarii, articole).
+//
+// Decizie: implementare regex pură (fără jsdom/DOMPurify) pentru a evita
+// dependențe ESM-only care strică Vercel deployment. Trade-off:
+//   - Pro: zero dependențe, runtime universal (Node + Edge), build mai rapid
+//   - Con: mai puțin sofisticat decât DOMPurify la edge cases
+// Compensare prin DEFENSE IN DEPTH:
+//   1. Aici stripHtml() iterează până nu mai găsește tag-uri (apără contra
+//      bypass-urilor cu nesting precum <scr<script>ipt>)
+//   2. La randare, React auto-escape transformă orice rest de HTML în text
+//   3. Pentru articole, react-markdown nu interpretează HTML brut nici el
+// Ca atare, chiar dacă regex-ul nostru ar avea o gaură, atacatorul tot nu
+// poate executa script — toate cele 3 straturi ar trebui să cedeze.
 
 export function stripHtml(dirty: string): string {
-  return DOMPurify.sanitize(dirty, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
+  if (!dirty) return '';
+  let prev: string;
+  let result = dirty;
+  // Eliminare comentarii HTML <!-- ... --> (pot ascunde conținut periculos)
+  result = result.replace(/<!--[\s\S]*?-->/g, '');
+  // Eliminare iterativă a tag-urilor — apără contra <scr<script>ipt>
+  do {
+    prev = result;
+    result = result.replace(/<[^>]*>/g, '');
+  } while (result !== prev);
+  return result.trim();
+}
+
+// Pentru moment NU permitem HTML în niciun loc — toate textele user-generated
+// sunt strip-uite. Dacă ulterior vom dori rich text cu tag-uri permise,
+// înlocuim cu un sanitizer dedicat (ex: sanitize-html, fără jsdom).
+export function sanitizeHtml(dirty: string): string {
+  return stripHtml(dirty);
 }
 
 // ========= RATE LIMITING =========
