@@ -4,6 +4,7 @@
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { fileUrl } from '@/lib/file-url';
 
 export default function CoverImageUpload({
   postId,
@@ -89,7 +90,7 @@ export default function CoverImageUpload({
         <div className="space-y-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={cover}
+            src={fileUrl(cover)}
             alt="Cover preview"
             className="w-full max-h-64 object-cover border border-carbon-700"
           />

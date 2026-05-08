@@ -15,6 +15,7 @@ import { prisma } from '@/lib/prisma';
 import HeaderActions from '@/components/HeaderActions';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { getLocale } from '@/lib/locale';
+import { fileUrl } from '@/lib/storage';
 
 const CATEGORY_LABELS: Record<string, { ro: string; en: string; class: string }> = {
   ROBOTICS: { ro: 'Robotică', en: 'Robotics', class: 'badge-robotics' },
@@ -112,7 +113,7 @@ export default async function SavedPage() {
                     <Link href={`/posts/${post.slug}`}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={post.coverImage}
+                        src={fileUrl(post.coverImage)}
                         alt={title}
                         className="w-full h-40 object-cover border-b border-carbon-700"
                       />

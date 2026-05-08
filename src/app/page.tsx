@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 import HeaderActions from '@/components/HeaderActions';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { getLocale, type Locale } from '@/lib/locale';
+import { fileUrl } from '@/lib/storage';
 
 async function getRecentPosts() {
   try {
@@ -179,7 +180,7 @@ export default async function HomePage() {
                     <Link href={`/posts/${post.slug}`}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={post.coverImage}
+                        src={fileUrl(post.coverImage)}
                         alt={title}
                         className="w-full h-40 object-cover border-b border-carbon-700"
                       />

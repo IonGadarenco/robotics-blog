@@ -16,6 +16,7 @@ import SaveButton from '@/components/SaveButton';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import MarkdownContent from '@/components/MarkdownContent';
 import { getLocale } from '@/lib/locale';
+import { fileUrl } from '@/lib/storage';
 
 // Mapare categorie -> etichetă vizibilă + clasă badge (consistent cu /posts și /).
 const CATEGORY_LABELS: Record<Category, { ro: string; en: string; class: string }> = {
@@ -166,7 +167,7 @@ export default async function PostDetailPage({
         {post.coverImage && (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
-            src={post.coverImage}
+            src={fileUrl(post.coverImage)}
             alt={title}
             className="w-full max-h-96 object-cover border border-carbon-800 mb-8"
           />
@@ -240,7 +241,7 @@ export default async function PostDetailPage({
                       ? `${(f.size / 1024).toFixed(1)} KB`
                       : `${(f.size / (1024 * 1024)).toFixed(1)} MB`;
 
-                const url = `/uploads/${f.storedAs}`;
+                const url = fileUrl(f.storedAs);
 
                 // Video — randerăm direct ca player HTML5 cu controls.
                 // Browser-ul oferă: play/pause, volume, fullscreen, scrub.

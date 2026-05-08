@@ -9,6 +9,7 @@ import type { Category } from '@prisma/client';
 import HeaderActions from '@/components/HeaderActions';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { getLocale } from '@/lib/locale';
+import { fileUrl } from '@/lib/storage';
 
 // Valorile permise pentru filtru — listă albă (whitelist).
 // Niciun input din URL nu se trimite direct în query Prisma fără să fie aici.
@@ -173,7 +174,7 @@ export default async function PostsListPage({
                     <Link href={`/posts/${post.slug}`}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={post.coverImage}
+                        src={fileUrl(post.coverImage)}
                         alt={title}
                         className="w-full h-40 object-cover border-b border-carbon-700"
                       />

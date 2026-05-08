@@ -132,9 +132,9 @@ export async function POST(
         file: {
           id: dbFile.id,
           filename: dbFile.filename,
+          storedAs: dbFile.storedAs,
           size: dbFile.size,
           mimeType: dbFile.mimeType,
-          url: `/uploads/${storedName}`,
         },
       },
       { status: 201 }

@@ -4,6 +4,7 @@
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { fileUrl } from '@/lib/file-url';
 
 interface AttachedFile {
   id: string;
@@ -76,7 +77,7 @@ export default function FileUpload({
         {
           id: data.file.id,
           filename: data.file.filename,
-          storedAs: data.file.url.replace('/uploads/', ''),
+          storedAs: data.file.storedAs,
           mimeType: data.file.mimeType,
           size: data.file.size,
         },
@@ -94,7 +95,7 @@ export default function FileUpload({
   // Imagini -> ![alt](url) (apar inline). Video -> [video](url) (devine
   // <video controls> la randare). Restul -> [filename](url) (link de download).
   function buildMarkdownRef(f: AttachedFile): string {
-    const url = `/uploads/${f.storedAs}`;
+    const url = fileUrl(f.storedAs);
     if (f.mimeType.startsWith('image/')) {
       return `![${f.filename}](${url})`;
     }
@@ -166,7 +167,7 @@ export default function FileUpload({
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <span className="text-xl flex-shrink-0">{fileIcon(f.mimeType)}</span>
                 <a
-                  href={`/uploads/${f.storedAs}`}
+                  href={fileUrl(f.storedAs)}
                   target="_blank"
                   rel="noopener"
                   className="font-mono text-sm text-spark-400 hover:text-spark-300 truncate"

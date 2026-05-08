@@ -11,12 +11,17 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       // Google Fonts CSS (style-src) și fișiere font (font-src)
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      // img-src: include https: pentru Vercel Blob și alte CDN-uri
       "img-src 'self' data: blob: https:",
       "font-src 'self' data: https://fonts.gstatic.com",
+      // media-src: pentru <video>/<audio> servite din Vercel Blob (HTTPS)
+      "media-src 'self' https:",
       "connect-src 'self'",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
+      // Apărare suplimentară: anti-plugin (Flash/Java rămase)
+      "object-src 'none'",
     ].join('; ')
   },
   // HSTS - forțează HTTPS pentru 2 ani

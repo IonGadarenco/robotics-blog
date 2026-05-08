@@ -98,26 +98,29 @@ export async function POST(
     return NextResponse.json({ error: 'Eroare la salvare' }, { status: 500 });
   }
 
-  const newUrl = `/uploads/${storedName}`;
-
-  // Update BD + șterge vechiul cover de pe disk
+  // Update BD cu DOAR numele stocat (URL-ul se construiește la randare via fileUrl)
   try {
     await prisma.post.update({
       where: { id: post.id },
-      data: { coverImage: newUrl },
+      data: { coverImage: storedName },
     });
   } catch (err) {
-    // Compensează — șterge noul fișier dacă INSERT eșuează
     await deleteFile(storedName).catch(() => {});
     console.error('Update cover error:', err);
     return NextResponse.json({ error: 'Eroare la actualizare' }, { status: 500 });
   }
 
-  // Șterge fișierul vechi de pe disk (dacă exista)
+  // Șterge fișierul vechi (dacă exista). Suportăm formate vechi: /uploads/<n>, http..., n
   if (post.coverImage) {
-    const oldStored = post.coverImage.replace(/^\/uploads\//, '');
+    let oldStored = post.coverImage.startsWith('/uploads/')
+      ? post.coverImage.replace(/^\/uploads\//, '')
+      : post.coverImage;
+    // Dacă era URL absolut Blob (data veche), extragem numele
+    if (oldStored.startsWith('http')) {
+      const lastSlash = oldStored.lastIndexOf('/');
+      if (lastSlash >= 0) oldStored = oldStored.substring(lastSlash + 1);
+    }
     await deleteFile(oldStored).catch((err) => {
-      // Nu blocăm pe asta — orfanii sunt invizibili pentru aplicație
       console.error('Delete old cover failed:', err);
     });
   }
@@ -127,7 +130,7 @@ export async function POST(
   revalidatePath(`/posts/${post.slug}`);
   revalidatePath(`/dashboard/posts/${post.id}/edit`);
 
-  return NextResponse.json({ success: true, coverImage: newUrl }, { status: 200 });
+  return NextResponse.json({ success: true, coverImage: storedName }, { status: 200 });
 }
 
 export async function DELETE(
@@ -149,8 +152,14 @@ export async function DELETE(
     data: { coverImage: null },
   });
 
-  // Apoi șterge de pe disk
-  const oldStored = post.coverImage.replace(/^\/uploads\//, '');
+  // Apoi șterge fișierul. Suportăm formate vechi cu /uploads/ prefix.
+  let oldStored = post.coverImage.startsWith('/uploads/')
+    ? post.coverImage.replace(/^\/uploads\//, '')
+    : post.coverImage;
+  if (oldStored.startsWith('http')) {
+    const lastSlash = oldStored.lastIndexOf('/');
+    if (lastSlash >= 0) oldStored = oldStored.substring(lastSlash + 1);
+  }
   await deleteFile(oldStored).catch((err) => {
     console.error('Delete cover from disk failed:', err);
   });

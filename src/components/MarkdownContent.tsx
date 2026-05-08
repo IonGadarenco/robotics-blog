@@ -94,13 +94,17 @@ export default function MarkdownContent({ source }: { source: string }) {
           //
           // Truc P3.C: dacă link-ul indică un video uploadat (.mp4/.webm),
           // randerăm <video> cu controls în loc de <a>. URL-ul e RESTRICȚIONAT
-          // la /uploads/ — nu permitem video-uri din alte surse pentru a evita
-          // ca cineva să încarce un URL extern care ar putea fi folosit pentru
-          // tracking/spying.
+          // la sursele noastre (local /uploads/ sau Vercel Blob) — nu permitem
+          // video-uri din alte domenii pentru a evita tracking/SSRF/XSS.
           a: ({ href, children }) => {
             const isInternalVideo =
-              href &&
-              /^\/uploads\/[a-f0-9]{64}\.(mp4|webm)$/i.test(href);
+              !!href &&
+              (
+                // Local mode
+                /^\/uploads\/[a-f0-9]{64}\.(mp4|webm)$/i.test(href) ||
+                // Vercel Blob mode
+                /^https:\/\/[a-z0-9]+\.public\.blob\.vercel-storage\.com\/[a-f0-9]{64}\.(mp4|webm)$/i.test(href)
+              );
 
             if (isInternalVideo) {
               return (
