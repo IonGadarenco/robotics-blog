@@ -23,6 +23,7 @@ export default function HeaderActions() {
   if (session?.user) {
     const role = (session.user as any).role as 'USER' | 'AUTHOR' | 'ADMIN';
     const canPost = role === 'AUTHOR' || role === 'ADMIN';
+    const isAdmin = role === 'ADMIN';
     return (
       <div className="flex items-center gap-3">
         <span className="hidden md:inline text-carbon-400 font-mono text-xs">
@@ -45,6 +46,15 @@ export default function HeaderActions() {
         {canPost && (
           <Link href="/dashboard" className="btn-secondary text-sm">
             Dashboard
+          </Link>
+        )}
+        {isAdmin && (
+          <Link
+            href="/admin"
+            className="text-red-400 hover:text-red-300 transition-colors font-mono text-sm uppercase tracking-wider"
+            title="Panou administrare"
+          >
+            ⚙ Admin
           </Link>
         )}
         {/* signOut() apelează endpoint-ul NextAuth, șterge cookie-ul HttpOnly
