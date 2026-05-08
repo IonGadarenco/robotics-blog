@@ -87,25 +87,28 @@ export async function POST(
     );
   }
 
-  // Salvare nouă imagine
-  let storedName: string;
+  // Salvare nouă imagine. saveFile() returnează:
+  //   - filename (mod local) → URL construit de fileUrl(): /uploads/<n>
+  //   - URL absolut Blob (mod prod) → folosit direct
+  let savedRef: string;
+  let storedNameForCleanup: string;
   try {
     const generated = generateStoredName(file.name);
-    storedName = generated.storedName;
-    await saveFile(file, storedName);
+    storedNameForCleanup = generated.storedName;
+    savedRef = await saveFile(file, generated.storedName);
   } catch (err) {
     console.error('Save cover error:', err);
     return NextResponse.json({ error: 'Eroare la salvare' }, { status: 500 });
   }
 
-  // Update BD cu DOAR numele stocat (URL-ul se construiește la randare via fileUrl)
+  // Update BD cu valoarea returnată de saveFile (filename SAU URL Blob)
   try {
     await prisma.post.update({
       where: { id: post.id },
-      data: { coverImage: storedName },
+      data: { coverImage: savedRef },
     });
   } catch (err) {
-    await deleteFile(storedName).catch(() => {});
+    await deleteFile(storedNameForCleanup).catch(() => {});
     console.error('Update cover error:', err);
     return NextResponse.json({ error: 'Eroare la actualizare' }, { status: 500 });
   }
@@ -130,7 +133,7 @@ export async function POST(
   revalidatePath(`/posts/${post.slug}`);
   revalidatePath(`/dashboard/posts/${post.id}/edit`);
 
-  return NextResponse.json({ success: true, coverImage: storedName }, { status: 200 });
+  return NextResponse.json({ success: true, coverImage: savedRef }, { status: 200 });
 }
 
 export async function DELETE(

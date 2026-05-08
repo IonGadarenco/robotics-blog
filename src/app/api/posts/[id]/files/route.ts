@@ -96,12 +96,14 @@ export async function POST(
     );
   }
 
-  // 7. Generare nume random + salvare pe disk
-  let storedName: string;
+  // 7. Generare nume random + salvare. saveFile() returnează:
+  //    - filename (local) sau URL absolut (Blob) — caller stochează direct.
+  let savedRef: string;
+  let storedNameForCleanup: string;
   try {
     const generated = generateStoredName(file.name);
-    storedName = generated.storedName;
-    await saveFile(file, storedName);
+    storedNameForCleanup = generated.storedName;
+    savedRef = await saveFile(file, generated.storedName);
   } catch (err) {
     console.error('Save file error:', err);
     return NextResponse.json(
@@ -117,7 +119,7 @@ export async function POST(
       data: {
         postId: post.id,
         filename: file.name,
-        storedAs: storedName,
+        storedAs: savedRef,
         mimeType: file.type,
         size: file.size,
       },
@@ -141,7 +143,7 @@ export async function POST(
     );
   } catch (err) {
     // Compensează — șterge fișierul de pe disk dacă INSERT-ul eșuează
-    await deleteFile(storedName).catch(() => {});
+    await deleteFile(storedNameForCleanup).catch(() => {});
     console.error('Create PostFile error:', err);
     return NextResponse.json(
       { error: 'Eroare la salvarea metadatelor' },
