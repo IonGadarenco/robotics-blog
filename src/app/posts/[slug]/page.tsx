@@ -225,13 +225,13 @@ export default async function PostDetailPage({
         */}
         <MarkdownContent source={content} />
 
-        {/* Atașamente — afișate doar dacă există */}
+        {/* Atașamente — video se redau inline, restul ca link de download */}
         {post.files.length > 0 && (
           <section className="mt-12 pt-8 border-t border-carbon-800">
             <div className="text-circuit-500 font-mono text-sm mb-4">
               // {t.attachments} ({post.files.length})
             </div>
-            <ul className="space-y-2">
+            <div className="space-y-4">
               {post.files.map((f) => {
                 const sizeStr =
                   f.size < 1024
@@ -239,20 +239,66 @@ export default async function PostDetailPage({
                     : f.size < 1024 * 1024
                       ? `${(f.size / 1024).toFixed(1)} KB`
                       : `${(f.size / (1024 * 1024)).toFixed(1)} MB`;
-                const icon = f.mimeType.startsWith('image/')
-                  ? '🖼'
-                  : f.mimeType === 'application/pdf'
+
+                const url = `/uploads/${f.storedAs}`;
+
+                // Video — randerăm direct ca player HTML5 cu controls.
+                // Browser-ul oferă: play/pause, volume, fullscreen, scrub.
+                if (f.mimeType.startsWith('video/')) {
+                  return (
+                    <div key={f.id} className="card">
+                      <div className="flex items-center justify-between mb-3 text-xs font-mono text-carbon-400">
+                        <span className="truncate">🎬 {f.filename}</span>
+                        <span className="text-carbon-500 flex-shrink-0 ml-3">{sizeStr}</span>
+                      </div>
+                      <video
+                        controls
+                        preload="metadata"
+                        className="w-full max-h-[600px] border border-carbon-800"
+                        src={url}
+                      >
+                        Browser-ul tău nu suportă redarea video.
+                      </video>
+                    </div>
+                  );
+                }
+
+                // Imagine — preview cu link spre versiunea full
+                if (f.mimeType.startsWith('image/')) {
+                  return (
+                    <div key={f.id} className="card">
+                      <div className="flex items-center justify-between mb-3 text-xs font-mono text-carbon-400">
+                        <span className="truncate">🖼 {f.filename}</span>
+                        <span className="text-carbon-500 flex-shrink-0 ml-3">{sizeStr}</span>
+                      </div>
+                      <a href={url} target="_blank" rel="noopener">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={url}
+                          alt={f.filename}
+                          loading="lazy"
+                          className="w-full max-h-[600px] object-contain border border-carbon-800"
+                        />
+                      </a>
+                    </div>
+                  );
+                }
+
+                // Restul — link de download cu icon
+                const icon =
+                  f.mimeType === 'application/pdf'
                     ? '📄'
                     : f.mimeType === 'application/zip'
                       ? '📦'
-                      : f.mimeType === 'model/stl' || f.mimeType === 'application/octet-stream'
+                      : f.mimeType === 'model/stl' ||
+                        f.mimeType === 'application/octet-stream'
                         ? '🔩'
                         : '📎';
                 return (
-                  <li key={f.id} className="card flex items-center gap-3 hover:border-spark-600">
+                  <div key={f.id} className="card flex items-center gap-3 hover:border-spark-600">
                     <span className="text-2xl">{icon}</span>
                     <a
-                      href={`/uploads/${f.storedAs}`}
+                      href={url}
                       target="_blank"
                       rel="noopener"
                       className="flex-1 font-mono text-sm text-spark-400 hover:text-spark-300 truncate"
@@ -262,10 +308,10 @@ export default async function PostDetailPage({
                       {f.filename}
                     </a>
                     <span className="text-xs font-mono text-carbon-500">{sizeStr}</span>
-                  </li>
+                  </div>
                 );
               })}
-            </ul>
+            </div>
           </section>
         )}
 

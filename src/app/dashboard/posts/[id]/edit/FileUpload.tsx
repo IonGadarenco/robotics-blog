@@ -23,6 +23,7 @@ function formatSize(bytes: number): string {
 // Iconiță simplă în funcție de tip.
 function fileIcon(mimeType: string): string {
   if (mimeType.startsWith('image/')) return '🖼';
+  if (mimeType.startsWith('video/')) return '🎬';
   if (mimeType === 'application/pdf') return '📄';
   if (mimeType === 'application/zip') return '📦';
   if (mimeType === 'model/stl' || mimeType === 'application/octet-stream') return '🔩';
@@ -90,11 +91,15 @@ export default function FileUpload({
   }
 
   // Generează referința Markdown potrivită pentru tipul fișierului.
-  // Imaginile -> ![alt](url) (apar inline). Restul -> [filename](url) (link).
+  // Imagini -> ![alt](url) (apar inline). Video -> [video](url) (devine
+  // <video controls> la randare). Restul -> [filename](url) (link de download).
   function buildMarkdownRef(f: AttachedFile): string {
     const url = `/uploads/${f.storedAs}`;
     if (f.mimeType.startsWith('image/')) {
       return `![${f.filename}](${url})`;
+    }
+    if (f.mimeType.startsWith('video/')) {
+      return `[${f.filename}](${url})`;
     }
     return `[${f.filename}](${url})`;
   }
@@ -145,12 +150,12 @@ export default function FileUpload({
       </div>
 
       <p className="text-carbon-400 text-xs font-mono leading-relaxed">
-        Tipuri permise: JPG, PNG, WebP, PDF, ZIP, STL.
-        Max 10 MB per fișier, 10 atașamente per articol.
+        Tipuri permise: JPG, PNG, WebP, PDF, ZIP, STL — max 10 MB.
+        Video MP4/WebM — max 50 MB.
         <br />
         <span className="text-circuit-400">Tip:</span> apasă <span className="text-spark-400">📋</span> pentru a
         copia referința Markdown și a o lipi în câmpurile <span className="text-spark-400">Conținut</span>.
-        Imaginile apar inline; restul ca link de download.
+        Imaginile și video-urile apar inline; restul ca link de download.
       </p>
 
       {/* Listă fișiere existente */}
@@ -202,7 +207,7 @@ export default function FileUpload({
             type="file"
             onChange={handleUpload}
             disabled={uploading}
-            accept=".jpg,.jpeg,.png,.webp,.pdf,.zip,.stl,image/jpeg,image/png,image/webp,application/pdf,application/zip,model/stl"
+            accept=".jpg,.jpeg,.png,.webp,.pdf,.zip,.stl,.mp4,.webm,image/jpeg,image/png,image/webp,application/pdf,application/zip,model/stl,video/mp4,video/webm"
             className="block w-full text-sm font-mono text-carbon-300
               file:mr-4 file:py-2 file:px-4 file:border-2 file:border-carbon-700
               file:bg-transparent file:text-carbon-200 file:font-mono file:font-bold

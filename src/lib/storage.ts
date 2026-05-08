@@ -33,6 +33,9 @@ export const MIME_EXTENSION_MAP: Record<string, string[]> = {
   // application/octet-stream e generic — apare uneori la .stl. Permis dar
   // doar dacă extensia e .stl (cross-check în extractExtension).
   'application/octet-stream': ['.stl'],
+  // Video — pentru ilustrarea proiectelor cu demo-uri scurte
+  'video/mp4': ['.mp4'],
+  'video/webm': ['.webm'],
 };
 
 // Sanitizare extensie din numele original. Normalizează la lowercase,

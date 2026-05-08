@@ -146,6 +146,8 @@ const ALLOWED_MIME_TYPES = [
   'application/zip',
   'model/stl',
   'application/octet-stream', // pentru .stl când browser-ul nu recunoaște MIME
+  'video/mp4',
+  'video/webm',
 ] as const;
 
 const MAX_FILENAME_LENGTH = 255; // limita FAT/ext4

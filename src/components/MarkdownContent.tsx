@@ -91,7 +91,30 @@ export default function MarkdownContent({ source }: { source: string }) {
 
           // Link-uri — securitate: rel="noopener noreferrer", target="_blank"
           // pentru cele externe. Pentru intern (start cu /), navigare normală.
+          //
+          // Truc P3.C: dacă link-ul indică un video uploadat (.mp4/.webm),
+          // randerăm <video> cu controls în loc de <a>. URL-ul e RESTRICȚIONAT
+          // la /uploads/ — nu permitem video-uri din alte surse pentru a evita
+          // ca cineva să încarce un URL extern care ar putea fi folosit pentru
+          // tracking/spying.
           a: ({ href, children }) => {
+            const isInternalVideo =
+              href &&
+              /^\/uploads\/[a-f0-9]{64}\.(mp4|webm)$/i.test(href);
+
+            if (isInternalVideo) {
+              return (
+                <video
+                  controls
+                  preload="metadata"
+                  className="max-w-full h-auto my-6 border border-carbon-800 mx-auto block"
+                  src={href}
+                >
+                  Browser-ul tău nu suportă redarea video.
+                </video>
+              );
+            }
+
             const isExternal = href && /^https?:\/\//i.test(href);
             return (
               <a

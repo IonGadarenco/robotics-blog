@@ -28,6 +28,8 @@ const MAX_FILES_PER_POST = 10;
 
 // Limita de mărime fișier (MB), citită din ENV.
 const MAX_SIZE_MB = parseInt(process.env.MAX_UPLOAD_SIZE_MB || '10', 10);
+// Video are limită separată — clipurile demo sunt natural mai mari decât 10 MB.
+const MAX_VIDEO_SIZE_MB = parseInt(process.env.MAX_VIDEO_SIZE_MB || '50', 10);
 
 export async function POST(
   request: NextRequest,
@@ -83,8 +85,10 @@ export async function POST(
     return NextResponse.json({ error: 'Câmpul "file" lipsește' }, { status: 400 });
   }
 
-  // 6. Validare conținut fișier
-  const validation = validateUpload(file, MAX_SIZE_MB);
+  // 6. Validare conținut fișier — limită diferențiată pentru video
+  const isVideo = file.type === 'video/mp4' || file.type === 'video/webm';
+  const sizeLimit = isVideo ? MAX_VIDEO_SIZE_MB : MAX_SIZE_MB;
+  const validation = validateUpload(file, sizeLimit);
   if (!validation.valid) {
     return NextResponse.json(
       { error: 'Fișier invalid', details: validation.errors },
